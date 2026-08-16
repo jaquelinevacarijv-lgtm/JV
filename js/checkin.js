@@ -125,15 +125,39 @@ const CheckIn = {
           </button>
         `;
         linha.querySelector('.botao-checkin').addEventListener('click', () => {
-          CheckIn.alternarPresenca(convidado.id_convidado);
+          CheckIn.alternarPresenca(convidado.id_convidado, linha, presente);
         });
         container.appendChild(linha);
       });
   },
 
-  async alternarPresenca(idConvidado) {
-    await UI.executar(() => Api.post('alternarPresencaConvidado', { idConvidado }), { silencioso: true });
-    CheckIn._atualizar({});
+  async alternarPresenca(idConvidado, linhaEl, estavaPresente) {
+    // Atualização otimista: pinta a linha na hora, sem esperar o servidor.
+    // Isso deixa o toque instantâneo pro usuário; a sincronização real
+    // com outros aparelhos continua acontecendo no polling de 5s.
+    const ficaPresente = !estavaPresente;
+    const botao = linhaEl.querySelector('.botao-checkin');
+
+    linhaEl.classList.toggle('linha-checkin--presente', ficaPresente);
+    botao.classList.toggle('botao-checkin--feito', ficaPresente);
+    botao.textContent = ficaPresente ? '✓ Presente' : 'Fazer check-in';
+    botao.disabled = true;
+
+    const total = parseInt(document.getElementById('contador-presenca').textContent.split(' / ')[1], 10) || 0;
+    const presentesAtual = document.querySelectorAll('.linha-checkin--presente').length;
+    document.getElementById('contador-presenca').textContent = `${presentesAtual} / ${total} presentes`;
+
+    try {
+      await Api.post('alternarPresencaConvidado', { idConvidado });
+    } catch (erro) {
+      // Deu errado — desfaz visualmente e avisa.
+      linhaEl.classList.toggle('linha-checkin--presente', estavaPresente);
+      botao.classList.toggle('botao-checkin--feito', estavaPresente);
+      botao.textContent = estavaPresente ? '✓ Presente' : 'Fazer check-in';
+      UI.mostrarErro('Não foi possível salvar. Tente de novo.');
+    } finally {
+      botao.disabled = false;
+    }
   }
 };
 

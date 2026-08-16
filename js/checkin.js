@@ -113,17 +113,20 @@ const CheckIn = {
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
       .forEach(convidado => {
         const presente = convidado.status === 'Presente';
-        const linha = document.createElement('button');
-        linha.type = 'button';
+        const linha = document.createElement('div');
         linha.className = `linha-checkin ${presente ? 'linha-checkin--presente' : ''}`;
         linha.innerHTML = `
-          <span class="linha-checkin__marca">${presente ? '✓' : ''}</span>
           <span class="linha-checkin__info">
             <span class="linha-checkin__nome">${convidado.nome}</span>
             ${convidado.mesa ? `<span class="linha-checkin__mesa">Mesa ${convidado.mesa}</span>` : ''}
           </span>
+          <button type="button" class="botao-checkin ${presente ? 'botao-checkin--feito' : ''}">
+            ${presente ? '✓ Presente' : 'Fazer check-in'}
+          </button>
         `;
-        linha.addEventListener('click', () => CheckIn.alternarPresenca(convidado.id_convidado));
+        linha.querySelector('.botao-checkin').addEventListener('click', () => {
+          CheckIn.alternarPresenca(convidado.id_convidado);
+        });
         container.appendChild(linha);
       });
   },

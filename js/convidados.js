@@ -24,7 +24,6 @@ const Convidados = {
     }
 
     Convidados._renderizarCabecalho(evento);
-    Convidados._renderizarLinkCompartilhar();
     Convidados._renderizarLista(convidados);
   },
 
@@ -34,10 +33,10 @@ const Convidados = {
       `${UI.formatarData(evento.data_evento)}${evento.local ? ' · ' + evento.local : ''}`;
   },
 
-  _renderizarLinkCompartilhar() {
-    const url = new URL('checkin.html', window.location.href);
-    url.searchParams.set('id', Convidados.idEvento);
-    document.getElementById('link-checkin').value = url.toString();
+  // Link genérico do app de check-in (sem o id do evento) — quem abrir
+  // escolhe o evento na hora, então o mesmo link serve pra qualquer um.
+  _linkAppCheckin() {
+    return new URL('checkin.html', window.location.href).toString();
   },
 
   _renderizarLista(convidados) {
@@ -128,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.files[0]) Convidados.importarArquivo(e.target.files[0]);
   });
 
-  document.getElementById('btn-copiar-link').addEventListener('click', () => {
-    UI.copiarLink(document.getElementById('link-checkin').value);
+  document.getElementById('btn-copiar-link-checkin').addEventListener('click', () => {
+    UI.copiarLink(Convidados._linkAppCheckin());
   });
 });

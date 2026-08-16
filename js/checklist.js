@@ -1,149 +1,111 @@
 /**
- * checklist.js
+ * checkin.js
  * -----------------------------------------------------------------------
- * Lógica exclusiva da tela de detalhe do evento (evento.html): mostrar o
- * checklist, adicionar itens (manual/modelo/importado), marcar concluído.
- * A geração do PDF fica em pdf.js — este arquivo só chama Pdf.gerar().
+ * Lógica exclusiva da tela pública de check-in (checkin.html), aberta
+ * pelo link compartilhado no dia do evento. Qualquer pessoa com o link
+ * acessa direto (sem senha) e marca presença; a lista se atualiza
+ * sozinha a cada poucos segundos pra refletir o que outras pessoas
+ * estão marcando ao mesmo tempo.
  * -----------------------------------------------------------------------
  */
 
-const Checklist = {
+const INTERVALO_ATUALIZACAO_MS = 5000;
+
+const CheckIn = {
   idEvento: new URLSearchParams(window.location.search).get('id'),
+  termoBusca: '',
+  atualizandoAgora: false,
 
-  async carregar() {
-    const [{ eventos }, { itens }] = await UI.executar(() => Promise.all([
-      Api.get('listarEventos'),
-      Api.get('listarItens', { idEvento: Checklist.idEvento })
-    ]));
-
-    const evento = eventos.find(e => e.id_evento === Checklist.idEvento);
-    if (!evento) {
-      UI.mostrarErro('Evento não encontrado.');
+  async iniciar() {
+    if (!CheckIn.idEvento) {
+      UI.mostrarErro('Link inválido — falta o evento.');
       return;
     }
 
-    Checklist._renderizarCabecalho(evento);
-    Checklist._renderizarItens(itens);
-    Checklist._controlarAcoesPorStatus(evento);
+    await CheckIn._atualizar({ primeiraVez: true });
+    setInterval(() => CheckIn._atualizar({}), INTERVALO_ATUALIZACAO_MS);
   },
 
-  _renderizarCabecalho(evento) {
-    document.getElementById('nome-evento').textContent = evento.nome_evento;
-    document.getElementById('info-evento').textContent =
-      `${UI.formatarData(evento.data_evento)}${evento.local ? ' · ' + evento.local : ''}`;
+  async _atualizar({ primeiraVez = false } = {}) {
+    if (CheckIn.atualizandoAgora) return;
+    CheckIn.atualizandoAgora = true;
+
+    try {
+      const executarOpcoes = primeiraVez ? {} : { silencioso: true };
+      const [{ eventos }, { convidados }] = await UI.executar(() => Promise.all([
+        Api.get('listarEventos'),
+        Api.get('listarConvidados', { idEvento: CheckIn.idEvento })
+      ]), executarOpcoes);
+
+      const evento = eventos.find(e => e.id_evento === CheckIn.idEvento);
+      if (!evento) {
+        UI.mostrarErro('Evento não encontrado.');
+        return;
+      }
+
+      if (primeiraVez) {
+        document.getElementById('nome-evento').textContent = evento.nome_evento;
+        document.getElementById('info-evento').textContent =
+          `${UI.formatarData(evento.data_evento)}${evento.local ? ' · ' + evento.local : ''}`;
+      }
+
+      CheckIn._renderizar(convidados);
+    } catch (erro) {
+      // Falha silenciosa nas atualizações automáticas — não interrompe
+      // quem já está usando a tela; o erro já aparece via toast.
+    } finally {
+      CheckIn.atualizandoAgora = false;
+    }
   },
 
-  _renderizarItens(itens) {
-    const container = document.getElementById('lista-checklist');
+  _renderizar(convidados) {
+    const filtrados = CheckIn.termoBusca
+      ? convidados.filter(c => c.nome.toLowerCase().includes(CheckIn.termoBusca.toLowerCase()))
+      : convidados;
+
+    const total = convidados.length;
+    const presentes = convidados.filter(c => c.status === 'Presente').length;
+    document.getElementById('contador-presenca').textContent = `${presentes} / ${total} presentes`;
+
+    const container = document.getElementById('lista-checkin');
+
+    if (filtrados.length === 0) {
+      container.innerHTML = `<p class="texto-vazio">${convidados.length === 0 ? 'Nenhum convidado cadastrado.' : 'Nenhum convidado encontrado com esse nome.'}</p>`;
+      return;
+    }
+
     container.innerHTML = '';
-
-    if (itens.length === 0) {
-      container.innerHTML = '<p class="texto-vazio">Nenhuma tarefa ainda. Use uma das opções acima.</p>';
-      return;
-    }
-
-    const porFase = {};
-    itens.forEach(item => {
-      if (!porFase[item.fase]) porFase[item.fase] = [];
-      porFase[item.fase].push(item);
-    });
-
-    Object.keys(porFase).forEach(fase => {
-      const bloco = document.createElement('div');
-      bloco.className = 'fase-bloco';
-      bloco.innerHTML = `<h4>${fase}</h4>`;
-
-      porFase[fase].forEach(item => {
-        const linha = document.createElement('label');
-        linha.className = 'item-checklist';
+    filtrados
+      .slice()
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+      .forEach(convidado => {
+        const presente = convidado.status === 'Presente';
+        const linha = document.createElement('button');
+        linha.type = 'button';
+        linha.className = `linha-checkin ${presente ? 'linha-checkin--presente' : ''}`;
         linha.innerHTML = `
-          <input type="checkbox" ${item.status === 'Concluído' ? 'checked' : ''} data-id="${item.id_item}">
-          <span>${item.tarefa}</span>
+          <span class="linha-checkin__marca">${presente ? '✓' : ''}</span>
+          <span class="linha-checkin__info">
+            <span class="linha-checkin__nome">${convidado.nome}</span>
+            ${convidado.mesa ? `<span class="linha-checkin__mesa">Mesa ${convidado.mesa}</span>` : ''}
+          </span>
         `;
-        linha.querySelector('input').addEventListener('change', (e) => {
-          Checklist.alternarStatus(e.target.dataset.id);
-        });
-        bloco.appendChild(linha);
+        linha.addEventListener('click', () => CheckIn.alternarPresenca(convidado.id_convidado));
+        container.appendChild(linha);
       });
-
-      container.appendChild(bloco);
-    });
   },
 
-  _controlarAcoesPorStatus(evento) {
-    const finalizado = evento.status === 'Finalizado';
-    document.getElementById('acoes-checklist').style.display = finalizado ? 'none' : 'flex';
-    document.getElementById('btn-finalizar').style.display = finalizado ? 'none' : 'inline-flex';
-    if (finalizado) {
-      document.getElementById('aviso-finalizado').style.display = 'block';
-    }
-  },
-
-  async alternarStatus(idItem) {
-    await UI.executar(() => Api.post('alternarStatusItem', { idItem }));
-    Checklist.carregar();
-  },
-
-  async adicionarManual(fase, tarefa) {
-    await UI.executar(() => Api.post('adicionarItemManual', { idEvento: Checklist.idEvento, fase, tarefa }));
-    Checklist.carregar();
-  },
-
-  async usarModeloPadrao() {
-    await UI.executar(() => Api.post('usarChecklistModelo', { idEvento: Checklist.idEvento }));
-    Checklist.carregar();
-  },
-
-  async importarArquivo(arquivo) {
-    const conteudoBase64 = await Checklist._arquivoParaBase64(arquivo);
-    await UI.executar(() => Api.post('importarChecklist', {
-      idEvento: Checklist.idEvento,
-      nomeArquivo: arquivo.name,
-      mimeType: arquivo.type,
-      conteudoBase64
-    }));
-    Checklist.carregar();
-  },
-
-  _arquivoParaBase64(arquivo) {
-    return new Promise((resolve, reject) => {
-      const leitor = new FileReader();
-      leitor.onload = () => resolve(leitor.result.split(',')[1]);
-      leitor.onerror = reject;
-      leitor.readAsDataURL(arquivo);
-    });
-  },
-
-  async finalizarEExportar() {
-    if (!confirm('Isso vai gerar o PDF e apagar o checklist deste evento da planilha. Confirma?')) return;
-
-    const dados = await UI.executar(() => Api.get('relatorioEvento', { idEvento: Checklist.idEvento }));
-    Pdf.gerar(dados.evento, dados.checklistPorFase);
-
-    await UI.executar(() => Api.post('finalizarEvento', { idEvento: Checklist.idEvento }));
-    Checklist.carregar();
+  async alternarPresenca(idConvidado) {
+    await UI.executar(() => Api.post('alternarPresencaConvidado', { idConvidado }), { silencioso: true });
+    CheckIn._atualizar({});
   }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  Checklist.carregar();
+  CheckIn.iniciar();
 
-  document.getElementById('form-item-manual').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const dados = new FormData(e.target);
-    Checklist.adicionarManual(dados.get('fase'), dados.get('tarefa'));
-    e.target.reset();
-  });
-
-  document.getElementById('btn-modelo-padrao').addEventListener('click', () => {
-    Checklist.usarModeloPadrao();
-  });
-
-  document.getElementById('input-importar').addEventListener('change', (e) => {
-    if (e.target.files[0]) Checklist.importarArquivo(e.target.files[0]);
-  });
-
-  document.getElementById('btn-finalizar').addEventListener('click', () => {
-    Checklist.finalizarEExportar();
+  document.getElementById('busca-convidado').addEventListener('input', (e) => {
+    CheckIn.termoBusca = e.target.value;
+    CheckIn._atualizar({});
   });
 });

@@ -21,14 +21,26 @@
   </header>
 
   <main>
-    <h2 id="nome-evento" style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 2px; text-align:center;"></h2>
-    <p id="info-evento" style="color: var(--cor-texto-suave); margin-top: 0; text-align:center;"></p>
 
-    <div class="contador-presenca" id="contador-presenca">— / — presentes</div>
+    <!-- Tela 1: escolher qual evento (mostrada quando o link não tem ?id=...) -->
+    <div id="tela-selecionar-evento">
+      <h2 style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 4px;">Qual evento?</h2>
+      <p style="color: var(--cor-texto-suave); margin-top: 0; margin-bottom: 20px;">Toque no evento pra abrir a lista de convidados e começar o check-in.</p>
+      <div id="lista-selecionar-evento"></div>
+    </div>
 
-    <input type="text" id="busca-convidado" class="busca-convidado" placeholder="Buscar convidado pelo nome…">
+    <!-- Tela 2: check-in do evento escolhido -->
+    <div id="tela-checkin" style="display:none;">
+      <a href="checkin.html" class="link-voltar">← Trocar evento</a>
+      <h2 id="nome-evento" style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 2px; text-align:center;"></h2>
+      <p id="info-evento" style="color: var(--cor-texto-suave); margin-top: 0; text-align:center;"></p>
 
-    <div id="lista-checkin"></div>
+      <div class="contador-presenca" id="contador-presenca">— / — presentes</div>
+
+      <input type="text" id="busca-convidado" class="busca-convidado" placeholder="Buscar convidado pelo nome…">
+
+      <div id="lista-checkin"></div>
+    </div>
   </main>
 
   <div class="toast" id="toast"></div>

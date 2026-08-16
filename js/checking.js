@@ -18,12 +18,45 @@ const CheckIn = {
 
   async iniciar() {
     if (!CheckIn.idEvento) {
-      UI.mostrarErro('Link inválido — falta o evento.');
+      await CheckIn._carregarSeletorEventos();
       return;
     }
 
+    document.getElementById('tela-selecionar-evento').style.display = 'none';
+    document.getElementById('tela-checkin').style.display = 'block';
+
     await CheckIn._atualizar({ primeiraVez: true });
     setInterval(() => CheckIn._atualizar({}), INTERVALO_ATUALIZACAO_MS);
+  },
+
+  // Tela 1: sem ?id na URL — lista os eventos pra escolher qual trabalhar.
+  async _carregarSeletorEventos() {
+    const { eventos } = await UI.executar(() => Api.get('listarEventos'));
+    const container = document.getElementById('lista-selecionar-evento');
+    container.innerHTML = '';
+
+    if (eventos.length === 0) {
+      container.innerHTML = '<p class="texto-vazio">Nenhum evento cadastrado ainda.</p>';
+      return;
+    }
+
+    eventos
+      .sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao))
+      .forEach(evento => {
+        const card = document.createElement('a');
+        card.href = `checkin.html?id=${evento.id_evento}`;
+        card.className = 'card-evento';
+        card.innerHTML = `
+          <div class="card-evento__topo">
+            <h3>${evento.nome_evento}</h3>
+          </div>
+          <p>${UI.formatarData(evento.data_evento)}${evento.local ? ' · ' + evento.local : ''}</p>
+          <div class="resumo-convidados">
+            <span class="resumo-convidados__item">👥 ${evento.totalConvidados ?? 0} convidados</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
   },
 
   async _atualizar({ primeiraVez = false } = {}) {

@@ -7,6 +7,6 @@
  */
 
 const CONFIG = {
-  API_URL: 'COLE_AQUI_A_URL_DO_SEU_APP_DA_WEB',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzX6CtX4MwUKcyMmM4ccDK7YIfdONw1RLSUhgEg2z80MHYGDvasj_gKZVp6QyjR-3g2kQ/exec',
   NOME_APP: 'Jaqueline Vacari — Eventos'
 };

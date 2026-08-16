@@ -44,7 +44,23 @@
           <label>Local (opcional)</label>
           <input type="text" name="local" placeholder="Ex: Espaço Villa Rosa">
         </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+
+        <div class="secao-convidados-modal">
+          <label>Convidados (opcional agora — dá pra adicionar depois também)</label>
+
+          <div id="linhas-convidados"></div>
+          <button type="button" class="botao botao--secundario botao--pequeno" id="btn-add-linha-convidado">+ Adicionar convidado</button>
+
+          <div class="separador-ou">ou</div>
+
+          <label class="botao botao--secundario botao--pequeno" style="cursor:pointer; display:inline-block;">
+            Importar planilha (.xlsx/.csv)
+            <input type="file" id="input-importar-novo-evento" accept=".xlsx,.csv" style="display:none;">
+          </label>
+          <span class="nome-arquivo-selecionado" id="nome-arquivo-selecionado"></span>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
           <button type="button" class="botao botao--secundario" id="btn-fechar-modal">Cancelar</button>
           <button type="submit" class="botao">Criar evento</button>
         </div>

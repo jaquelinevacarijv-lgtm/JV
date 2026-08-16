@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checklist — Jaqueline Vacari</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#CD8680">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topo-app">
+    <img src="assets/icons/icon-192.png" alt="Jaqueline Vacari">
+    <h1>Jaqueline Vacari — Eventos</h1>
+  </header>
+
+  <main>
+    <a href="index.html" class="link-voltar">← Voltar aos eventos</a>
+
+    <h2 id="nome-evento" style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 2px;"></h2>
+    <p id="info-evento" style="color: var(--cor-texto-suave); margin-top: 0;"></p>
+
+    <div class="aviso-finalizado" id="aviso-finalizado">
+      Este evento já foi finalizado — o checklist foi exportado e removido.
+    </div>
+
+    <div class="acoes-checklist" id="acoes-checklist">
+      <button class="botao botao--secundario" id="btn-modelo-padrao">Usar modelo padrão</button>
+      <label class="botao botao--secundario" style="cursor:pointer;">
+        Importar planilha (.xlsx/.csv)
+        <input type="file" id="input-importar" accept=".xlsx,.csv" style="display:none;">
+      </label>
+    </div>
+
+    <form id="form-item-manual" class="acoes-checklist" style="align-items: flex-end;">
+      <div class="campo" style="flex:1; min-width: 140px;">
+        <label>Fase</label>
+        <input type="text" name="fase" placeholder="Ex: 5 a 4 meses antes">
+      </div>
+      <div class="campo" style="flex:2; min-width: 180px;">
+        <label>Tarefa</label>
+        <input type="text" name="tarefa" required placeholder="Ex: Prova do vestido">
+      </div>
+      <button type="submit" class="botao">Adicionar</button>
+    </form>
+
+    <div id="lista-checklist"></div>
+
+    <div class="rodape-evento">
+      <button class="botao" id="btn-finalizar">Finalizar evento e exportar PDF</button>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <div class="loading" id="loading">Carregando…</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/checklist.js"></script>
+</body>
+</html>

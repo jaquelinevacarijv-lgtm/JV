@@ -1,0 +1,185 @@
+/**
+ * style.css
+ * -----------------------------------------------------------------------
+ * Identidade visual baseada na logo Jaqueline Vacari: rosé/terracota,
+ * fundo claro, tipografia serifada delicada nos títulos.
+ * -----------------------------------------------------------------------
+ */
+
+:root {
+  --cor-destaque: #CD8680;
+  --cor-destaque-escura: #B36A63;
+  --cor-fundo: #FDFBFA;
+  --cor-texto: #3A3A3A;
+  --cor-texto-suave: #8A8A8A;
+  --cor-borda: #EDE3E1;
+  --fonte-titulo: 'Playfair Display', Georgia, serif;
+  --fonte-corpo: 'Poppins', -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte-corpo);
+}
+
+.topo-app {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.topo-app img { height: 44px; }
+
+.topo-app h1 {
+  font-family: var(--fonte-titulo);
+  font-size: 20px;
+  color: var(--cor-destaque-escura);
+  margin: 0;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.botao {
+  background: var(--cor-destaque);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-family: var(--fonte-corpo);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.botao:hover { background: var(--cor-destaque-escura); }
+.botao--secundario {
+  background: transparent;
+  color: var(--cor-destaque-escura);
+  border: 1px solid var(--cor-destaque);
+}
+.botao--secundario:hover { background: #FBF1EF; }
+
+.card-evento {
+  display: block;
+  padding: 16px 18px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: var(--cor-texto);
+  transition: box-shadow .15s ease;
+}
+.card-evento:hover { box-shadow: 0 4px 14px rgba(205,134,128,0.15); }
+.card-evento__topo { display: flex; justify-content: space-between; align-items: center; }
+.card-evento h3 { font-family: var(--fonte-titulo); margin: 0; font-size: 17px; }
+.card-evento p { margin: 6px 0 0; font-size: 13px; color: var(--cor-texto-suave); }
+
+.badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.badge--ativo { background: #FBF1EF; color: var(--cor-destaque-escura); }
+.badge--finalizado { background: #EFEFEF; color: #888; }
+
+.texto-vazio { color: var(--cor-texto-suave); font-style: italic; }
+
+.modal {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  align-items: center; justify-content: center;
+}
+.modal--visivel { display: flex; }
+.modal__conteudo {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 90%; max-width: 380px;
+}
+.modal__conteudo h2 { font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-top: 0; }
+
+.campo { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+.campo label { font-size: 13px; color: var(--cor-texto-suave); }
+.campo input {
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  font-family: var(--fonte-corpo);
+  font-size: 14px;
+}
+
+.acoes-checklist { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+
+.fase-bloco { margin-bottom: 18px; }
+.fase-bloco h4 {
+  font-family: var(--fonte-titulo);
+  color: var(--cor-destaque-escura);
+  border-bottom: 1px solid var(--cor-borda);
+  padding-bottom: 6px;
+}
+
+.item-checklist {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+.item-checklist input { width: 18px; height: 18px; accent-color: var(--cor-destaque); }
+
+.aviso-finalizado {
+  display: none;
+  background: #FBF1EF;
+  border: 1px solid var(--cor-destaque);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.rodape-evento { margin-top: 24px; text-align: right; }
+
+.link-voltar {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: var(--cor-texto-suave);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #C0392B;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  transition: all .2s ease;
+  pointer-events: none;
+}
+.toast--visivel { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.loading {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(255,255,255,.6);
+  align-items: center; justify-content: center;
+  font-family: var(--fonte-titulo);
+  color: var(--cor-destaque-escura);
+}
+.loading--visivel { display: flex; }

@@ -1,7 +1,7 @@
 {
   "name": "Jaqueline Vacari — Eventos",
   "short_name": "JV Eventos",
-  "description": "Painel de gestão de eventos e casamentos Jaqueline Vacari",
+  "description": "Painel de gestão de convidados e check-in de eventos Jaqueline Vacari",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

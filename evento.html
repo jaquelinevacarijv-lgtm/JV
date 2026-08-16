@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checklist — Jaqueline Vacari</title>
+  <title>Convidados — Jaqueline Vacari</title>
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="assets/icons/favicon-32.png">
@@ -27,45 +27,46 @@
     <h2 id="nome-evento" style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 2px;"></h2>
     <p id="info-evento" style="color: var(--cor-texto-suave); margin-top: 0;"></p>
 
-    <div class="aviso-finalizado" id="aviso-finalizado">
-      Este evento já foi finalizado — o checklist foi exportado e removido.
+    <div class="caixa-compartilhar">
+      <input type="text" id="link-checkin" readonly>
+      <button type="button" class="botao botao--pequeno" id="btn-copiar-link">Copiar link</button>
     </div>
+    <p style="font-size: 12px; color: var(--cor-texto-suave); margin-top: -14px; margin-bottom: 22px;">
+      Compartilhe esse link no dia do evento — quem receber marca presença direto, sem precisar de login.
+    </p>
 
-    <div class="acoes-checklist" id="acoes-checklist">
-      <button class="botao botao--secundario" id="btn-modelo-padrao">Usar modelo padrão</button>
+    <form id="form-convidado-manual" class="acoes-checklist" style="align-items: flex-end;">
+      <div class="campo" style="flex:2; min-width: 180px;">
+        <label>Nome do convidado</label>
+        <input type="text" name="nome" required placeholder="Ex: Maria Silva">
+      </div>
+      <div class="campo" style="flex:1; min-width: 100px;">
+        <label>Mesa</label>
+        <input type="text" name="mesa" placeholder="Ex: 5">
+      </div>
+      <button type="submit" class="botao">Adicionar</button>
+    </form>
+
+    <div class="acoes-checklist">
       <label class="botao botao--secundario" style="cursor:pointer;">
         Importar planilha (.xlsx/.csv)
         <input type="file" id="input-importar" accept=".xlsx,.csv" style="display:none;">
       </label>
     </div>
 
-    <form id="form-item-manual" class="acoes-checklist" style="align-items: flex-end;">
-      <div class="campo" style="flex:1; min-width: 140px;">
-        <label>Fase</label>
-        <input type="text" name="fase" placeholder="Ex: 5 a 4 meses antes">
-      </div>
-      <div class="campo" style="flex:2; min-width: 180px;">
-        <label>Tarefa</label>
-        <input type="text" name="tarefa" required placeholder="Ex: Prova do vestido">
-      </div>
-      <button type="submit" class="botao">Adicionar</button>
-    </form>
-
-    <div id="lista-checklist"></div>
-
-    <div class="rodape-evento">
-      <button class="botao" id="btn-finalizar">Finalizar evento e exportar PDF</button>
+    <div class="lista-cabecalho">
+      <h4>Convidados</h4>
+      <span id="resumo-lista"></span>
     </div>
+    <div id="lista-convidados"></div>
   </main>
 
   <div class="toast" id="toast"></div>
   <div class="loading" id="loading">Carregando…</div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/ui.js"></script>
-  <script src="js/pdf.js"></script>
-  <script src="js/checklist.js"></script>
+  <script src="js/convidados.js"></script>
 </body>
 </html>

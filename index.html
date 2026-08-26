@@ -1,84 +1,226 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jaqueline Vacari — Eventos</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaqueline Vacari — Eventos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sage-deep:   #7C8B72;
+    --sage:        #A9B79E;
+    --sage-light:  #E1E8DA;
+    --cream:       #FBF9F4;
+    --white:       #FFFFFF;
+    --ink:         #3B3C32;
+    --ink-soft:    #8A8B7C;
+    --gold:        #BFA06A;
+    --gold-soft:   #F1E9D6;
+    --green:       #6E9575;
+    --border:      #EAE6DC;
+    --shadow:      0 10px 26px rgba(60,64,45,0.07);
+    --shadow-hover:0 16px 32px rgba(60,64,45,0.13);
+  }
 
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="assets/icons/favicon-32.png">
-  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#CD8680">
+  *{ box-sizing:border-box; margin:0; padding:0; }
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  body{
+    font-family:'Jost', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:22px 48px;
+    border-bottom:1px solid var(--border);
+    background:var(--cream);
+  }
+
+  .logo{
+    width:40px; height:40px;
+    border-radius:50%;
+    border:1.5px solid var(--sage);
+    background:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:1rem;
+    color:var(--sage-deep);
+    flex-shrink:0;
+  }
+
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.5rem;
+    color:var(--sage-deep);
+    letter-spacing:0.01em;
+  }
+
+  h1 span{
+    font-weight:400;
+    color:var(--ink-soft);
+  }
+
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:44px 24px 60px;
+  }
+
+  .btn-new{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--sage-deep);
+    color:var(--white);
+    border:none;
+    padding:13px 24px;
+    border-radius:100px;
+    font-family:'Jost', sans-serif;
+    font-size:0.9rem;
+    font-weight:500;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    transition:transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    margin-bottom:30px;
+  }
+
+  .btn-new:hover{
+    transform:translateY(-2px);
+    box-shadow:var(--shadow-hover);
+    background:#6d7c64;
+  }
+
+  .events{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .event-card{
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:22px 26px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    text-decoration:none;
+    color:inherit;
+    transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .event-card:hover{
+    transform:translateY(-3px);
+    box-shadow:var(--shadow-hover);
+    border-color:var(--sage-light);
+  }
+
+  .event-info h2{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.4rem;
+    margin-bottom:4px;
+  }
+
+  .event-meta{
+    font-size:0.86rem;
+    color:var(--ink-soft);
+    margin-bottom:12px;
+  }
+
+  .event-stats{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    font-size:0.86rem;
+    color:var(--ink-soft);
+  }
+
+  .event-stats .stat{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .event-stats svg{ width:15px; height:15px; stroke:var(--ink-soft); flex-shrink:0; }
+
+  .event-stats .presentes{
+    color:var(--green);
+    font-weight:500;
+  }
+
+  .badge{
+    padding:6px 14px;
+    border-radius:100px;
+    font-size:0.74rem;
+    font-weight:500;
+    letter-spacing:0.03em;
+    white-space:nowrap;
+  }
+
+  .badge.ativo{ background:var(--sage-light); color:var(--sage-deep); }
+  .badge.planejamento{ background:var(--gold-soft); color:#8C6D3E; }
+  .badge.finalizado{ background:#EEE; color:var(--ink-soft); }
+
+  @media (max-width:560px){
+    header{ padding:18px 20px; }
+    main{ padding:32px 16px 48px; }
+    .event-card{ flex-direction:column; }
+  }
+</style>
 </head>
 <body>
 
-  <header class="topo-app">
-    <img src="assets/icons/icon-192.png" alt="Jaqueline Vacari">
-    <h1>Jaqueline Vacari — Eventos</h1>
+  <header>
+    <div class="logo">JV</div>
+    <h1>Jaqueline Vacari <span>— Eventos</span></h1>
   </header>
 
   <main>
-    <button class="botao" id="btn-abrir-modal">+ Novo evento</button>
+    <button class="btn-new">+ Novo evento</button>
 
-    <div id="lista-eventos" style="margin-top: 20px;"></div>
+    <div class="events">
+      <a href="evento.html" class="event-card">
+        <div class="event-info">
+          <h2>Casamento Petefi</h2>
+          <div class="event-meta">26/08/2026 · Expo</div>
+          <div class="event-stats">
+            <span class="stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              204 convidados
+            </span>
+            <span class="stat presentes">✓ 4 presentes</span>
+          </div>
+        </div>
+        <span class="badge ativo">Ativo</span>
+      </a>
+
+      <a href="evento.html" class="event-card">
+        <div class="event-info">
+          <h2>Tailan</h2>
+          <div class="event-meta">27/08/2026 · Villa Rosa</div>
+          <div class="event-stats">
+            <span class="stat">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              205 convidados
+            </span>
+            <span class="stat presentes">✓ 1 presente</span>
+          </div>
+        </div>
+        <span class="badge planejamento">Planejamento</span>
+      </a>
+    </div>
   </main>
 
-  <!-- Modal: novo evento -->
-  <div class="modal" id="modal-novo-evento">
-    <div class="modal__conteudo">
-      <h2>Novo evento</h2>
-      <form id="form-novo-evento">
-        <div class="campo">
-          <label>Nome do evento</label>
-          <input type="text" name="nomeEvento" required placeholder="Ex: Casamento Ana & Pedro">
-        </div>
-        <div class="campo">
-          <label>Data</label>
-          <input type="date" name="dataEvento">
-        </div>
-        <div class="campo">
-          <label>Local (opcional)</label>
-          <input type="text" name="local" placeholder="Ex: Espaço Villa Rosa">
-        </div>
-
-        <div class="secao-convidados-modal">
-          <label>Convidados (opcional agora — dá pra adicionar depois também)</label>
-
-          <div id="linhas-convidados"></div>
-          <button type="button" class="botao botao--secundario botao--pequeno" id="btn-add-linha-convidado">+ Adicionar convidado</button>
-
-          <div class="separador-ou">ou</div>
-
-          <label class="botao botao--secundario botao--pequeno" style="cursor:pointer; display:inline-block;">
-            Importar planilha (.xlsx/.csv)
-            <input type="file" id="input-importar-novo-evento" accept=".xlsx,.csv" style="display:none;">
-          </label>
-          <span class="nome-arquivo-selecionado" id="nome-arquivo-selecionado"></span>
-        </div>
-
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
-          <button type="button" class="botao botao--secundario" id="btn-fechar-modal">Cancelar</button>
-          <button type="submit" class="botao">Criar evento</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-  <div class="loading" id="loading">Carregando…</div>
-
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/eventos.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
-  </script>
 </body>
 </html>

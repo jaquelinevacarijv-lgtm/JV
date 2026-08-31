@@ -6,6 +6,13 @@
  * acessa direto (sem senha) e marca presença; a lista se atualiza
  * sozinha a cada poucos segundos pra refletir o que outras pessoas
  * estão marcando ao mesmo tempo.
+ *
+ * IMPORTANTE (correção): a lista de convidados agora vive numa variável
+ * local (CheckIn.convidados), não só no DOM. O polling de 5s SEMPRE
+ * redesenha a partir dela. Enquanto um convidado tem uma marcação em
+ * andamento (CheckIn.pendentes), o polling não sobrescreve o status dele
+ * com o que vier do servidor — isso evita que uma atualização automática
+ * "desfaça" visualmente um clique que ainda não terminou de salvar.
  * -----------------------------------------------------------------------
  */
 
@@ -15,6 +22,8 @@ const CheckIn = {
   idEvento: new URLSearchParams(window.location.search).get('id'),
   termoBusca: '',
   atualizandoAgora: false,
+  convidados: [],
+  pendentes: new Set(), // ids de convidados com uma marcação em andamento
 
   async iniciar() {
     if (!CheckIn.idEvento) {
@@ -82,7 +91,19 @@ const CheckIn = {
           `${UI.formatarData(evento.data_evento)}${evento.local ? ' · ' + evento.local : ''}`;
       }
 
-      CheckIn._renderizar(convidados);
+      // Funde o que veio do servidor com o cache local: qualquer convidado
+      // que está com marcação pendente MANTÉM o status local (otimista) —
+      // o servidor ainda não é a fonte da verdade pra ele até a resposta
+      // do POST confirmar (ou desfazer, em caso de erro).
+      CheckIn.convidados = convidados.map(convidadoServidor => {
+        if (CheckIn.pendentes.has(convidadoServidor.id_convidado)) {
+          const local = CheckIn.convidados.find(c => c.id_convidado === convidadoServidor.id_convidado);
+          if (local) return { ...convidadoServidor, status: local.status };
+        }
+        return convidadoServidor;
+      });
+
+      CheckIn._renderizar();
     } catch (erro) {
       // Falha silenciosa nas atualizações automáticas — não interrompe
       // quem já está usando a tela; o erro já aparece via toast.
@@ -91,7 +112,8 @@ const CheckIn = {
     }
   },
 
-  _renderizar(convidados) {
+  _renderizar() {
+    const convidados = CheckIn.convidados;
     const filtrados = CheckIn.termoBusca
       ? convidados.filter(c => c.nome.toLowerCase().includes(CheckIn.termoBusca.toLowerCase()))
       : convidados;
@@ -113,6 +135,8 @@ const CheckIn = {
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
       .forEach(convidado => {
         const presente = convidado.status === 'Presente';
+        const pendente = CheckIn.pendentes.has(convidado.id_convidado);
+
         const linha = document.createElement('div');
         linha.className = `linha-checkin ${presente ? 'linha-checkin--presente' : ''}`;
         linha.innerHTML = `
@@ -120,43 +144,44 @@ const CheckIn = {
             <span class="linha-checkin__nome">${convidado.nome}</span>
             ${convidado.mesa ? `<span class="linha-checkin__mesa">Mesa ${convidado.mesa}</span>` : ''}
           </span>
-          <button type="button" class="botao-checkin ${presente ? 'botao-checkin--feito' : ''}">
+          <button type="button" class="botao-checkin ${presente ? 'botao-checkin--feito' : ''}" ${pendente ? 'disabled' : ''}>
             ${presente ? '✓ Presente' : 'Fazer check-in'}
           </button>
         `;
         linha.querySelector('.botao-checkin').addEventListener('click', () => {
-          CheckIn.alternarPresenca(convidado.id_convidado, linha, presente);
+          CheckIn.alternarPresenca(convidado.id_convidado);
         });
         container.appendChild(linha);
       });
   },
 
-  async alternarPresenca(idConvidado, linhaEl, estavaPresente) {
-    // Atualização otimista: pinta a linha na hora, sem esperar o servidor.
-    // Isso deixa o toque instantâneo pro usuário; a sincronização real
-    // com outros aparelhos continua acontecendo no polling de 5s.
-    const ficaPresente = !estavaPresente;
-    const botao = linhaEl.querySelector('.botao-checkin');
+  async alternarPresenca(idConvidado) {
+    const convidado = CheckIn.convidados.find(c => c.id_convidado === idConvidado);
+    if (!convidado) return;
 
-    linhaEl.classList.toggle('linha-checkin--presente', ficaPresente);
-    botao.classList.toggle('botao-checkin--feito', ficaPresente);
-    botao.textContent = ficaPresente ? '✓ Presente' : 'Fazer check-in';
-    botao.disabled = true;
+    const statusAnterior = convidado.status;
+    const ficaPresente = statusAnterior !== 'Presente';
 
-    const total = parseInt(document.getElementById('contador-presenca').textContent.split(' / ')[1], 10) || 0;
-    const presentesAtual = document.querySelectorAll('.linha-checkin--presente').length;
-    document.getElementById('contador-presenca').textContent = `${presentesAtual} / ${total} presentes`;
+    // Atualização otimista: já reflete no cache local e redesenha na hora,
+    // sem esperar o servidor. Marca como "pendente" pra o polling (que
+    // pode disparar nesse meio-tempo) não sobrescrever com o dado antigo.
+    convidado.status = ficaPresente ? 'Presente' : 'Aguardando';
+    CheckIn.pendentes.add(idConvidado);
+    CheckIn._renderizar();
 
     try {
-      await Api.post('alternarPresencaConvidado', { idConvidado });
+      const { status } = await Api.post('alternarPresencaConvidado', { idConvidado });
+      // Usa o status que o servidor confirmou como verdade final (cobre
+      // o raro caso de dois cliques quase simultâneos no mesmo convidado
+      // em aparelhos diferentes).
+      convidado.status = status;
     } catch (erro) {
-      // Deu errado — desfaz visualmente e avisa.
-      linhaEl.classList.toggle('linha-checkin--presente', estavaPresente);
-      botao.classList.toggle('botao-checkin--feito', estavaPresente);
-      botao.textContent = estavaPresente ? '✓ Presente' : 'Fazer check-in';
+      // Deu errado — desfaz e avisa.
+      convidado.status = statusAnterior;
       UI.mostrarErro('Não foi possível salvar. Tente de novo.');
     } finally {
-      botao.disabled = false;
+      CheckIn.pendentes.delete(idConvidado);
+      CheckIn._renderizar();
     }
   }
 };
@@ -166,6 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('busca-convidado').addEventListener('input', (e) => {
     CheckIn.termoBusca = e.target.value;
-    CheckIn._atualizar({});
+    CheckIn._renderizar();
   });
 });

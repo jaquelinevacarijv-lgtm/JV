@@ -4,48 +4,100 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Check-in — Jaqueline Vacari</title>
-
   <link rel="icon" href="assets/icons/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <meta name="theme-color" content="#CD8680">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Barra de navegação alfabética (A-Z) da tela de check-in.
+       Fica fixa na lateral esquerda, tanto no PC quanto no celular. */
+    .az-nav{
+      display:none; /* CheckIn.iniciar() muda pra 'flex' quando a lista carrega */
+      flex-direction:column;
+      align-items:center;
+      gap:1px;
+      position:fixed;
+      left:6px;
+      top:50%;
+      transform:translateY(-50%);
+      max-height:82vh;
+      overflow-y:auto;
+      background:rgba(255,255,255,0.9);
+      backdrop-filter:blur(6px);
+      border-radius:16px;
+      padding:10px 4px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.09);
+      z-index:40;
+      scrollbar-width:none;
+    }
+    .az-nav::-webkit-scrollbar{ display:none; }
+
+    .az-nav button{
+      border:none;
+      background:none;
+      cursor:pointer;
+      font-family: var(--fonte-corpo, 'Poppins', sans-serif);
+      font-size:0.66rem;
+      font-weight:600;
+      color: var(--cor-texto-suave, #9A9A90);
+      padding:2.5px 6px;
+      border-radius:7px;
+      line-height:1.5;
+      transition:background 0.15s ease, color 0.15s ease;
+    }
+    .az-nav button:disabled{ opacity:0.28; cursor:default; }
+    .az-nav button:not(:disabled):hover{ background:rgba(0,0,0,0.06); }
+    .az-nav button.ativa{
+      color:#fff;
+      background: var(--cor-destaque-escura, #CD8680);
+    }
+
+    .grupo-letra__titulo{
+      font-family: var(--fonte-titulo, 'Playfair Display', serif);
+      color: var(--cor-destaque-escura, #CD8680);
+      font-size:1rem;
+      font-weight:600;
+      margin:22px 2px 8px;
+      padding-bottom:5px;
+      border-bottom:1px solid rgba(0,0,0,0.07);
+    }
+    .grupo-letra:first-child .grupo-letra__titulo{ margin-top:8px; }
+
+    @media (max-width:640px){
+      .az-nav{ left:2px; padding:8px 2px; gap:0; }
+      .az-nav button{ font-size:0.58rem; padding:1.5px 4px; }
+    }
+  </style>
 </head>
 <body>
-
   <header class="topo-app">
     <img src="assets/icons/icon-192.png" alt="Jaqueline Vacari">
     <h1>Jaqueline Vacari — Eventos</h1>
   </header>
 
-  <main>
+  <nav class="az-nav" id="az-nav" aria-label="Ir para a letra"></nav>
 
+  <main>
     <!-- Tela 1: escolher qual evento (mostrada quando o link não tem ?id=...) -->
     <div id="tela-selecionar-evento">
       <h2 style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 4px;">Qual evento?</h2>
       <p style="color: var(--cor-texto-suave); margin-top: 0; margin-bottom: 20px;">Toque no evento pra abrir a lista de convidados e começar o check-in.</p>
       <div id="lista-selecionar-evento"></div>
     </div>
-
     <!-- Tela 2: check-in do evento escolhido -->
     <div id="tela-checkin" style="display:none;">
       <a href="checkin.html" class="link-voltar">← Trocar evento</a>
       <h2 id="nome-evento" style="font-family: var(--fonte-titulo); color: var(--cor-destaque-escura); margin-bottom: 2px; text-align:center;"></h2>
       <p id="info-evento" style="color: var(--cor-texto-suave); margin-top: 0; text-align:center;"></p>
-
       <div class="contador-presenca" id="contador-presenca">— / — presentes</div>
-
       <input type="text" id="busca-convidado" class="busca-convidado" placeholder="Buscar convidado pelo nome…">
-
       <div id="lista-checkin"></div>
     </div>
   </main>
-
   <div class="toast" id="toast"></div>
   <div class="loading" id="loading">Carregando…</div>
-
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/ui.js"></script>

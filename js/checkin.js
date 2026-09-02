@@ -7,16 +7,20 @@
  * sozinha a cada poucos segundos pra refletir o que outras pessoas
  * estão marcando ao mesmo tempo.
  *
- * IMPORTANTE (correção): a lista de convidados agora vive numa variável
- * local (CheckIn.convidados), não só no DOM. O polling de 5s SEMPRE
- * redesenha a partir dela. Enquanto um convidado tem uma marcação em
- * andamento (CheckIn.pendentes), o polling não sobrescreve o status dele
- * com o que vier do servidor — isso evita que uma atualização automática
- * "desfaça" visualmente um clique que ainda não terminou de salvar.
+ * A lista de convidados vive numa variável local (CheckIn.convidados),
+ * não só no DOM. O polling de 5s SEMPRE redesenha a partir dela. Enquanto
+ * um convidado tem uma marcação em andamento (CheckIn.pendentes), o
+ * polling não sobrescreve o status dele com o que vier do servidor.
+ *
+ * NAVEGAÇÃO ALFABÉTICA: a lista é agrupada por letra inicial (sem
+ * acento). A barra lateral (#az-nav) mostra A-Z; letras sem nenhum
+ * convidado ficam desabilitadas; clicar rola até o grupo; a letra do
+ * grupo visível no momento fica destacada sozinha (scroll-spy).
  * -----------------------------------------------------------------------
  */
 
 const INTERVALO_ATUALIZACAO_MS = 5000;
+const ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
 
 const CheckIn = {
   idEvento: new URLSearchParams(window.location.search).get('id'),
@@ -24,6 +28,7 @@ const CheckIn = {
   atualizandoAgora: false,
   convidados: [],
   pendentes: new Set(), // ids de convidados com uma marcação em andamento
+  _observer: null,
 
   async iniciar() {
     if (!CheckIn.idEvento) {
@@ -33,6 +38,8 @@ const CheckIn = {
 
     document.getElementById('tela-selecionar-evento').style.display = 'none';
     document.getElementById('tela-checkin').style.display = 'block';
+    const azNav = document.getElementById('az-nav');
+    if (azNav) azNav.style.display = 'flex';
 
     await CheckIn._atualizar({ primeiraVez: true });
     setInterval(() => CheckIn._atualizar({}), INTERVALO_ATUALIZACAO_MS);
@@ -112,6 +119,14 @@ const CheckIn = {
     }
   },
 
+  // Primeira letra do nome, maiúscula e sem acento (ex: "Álvaro" → "A").
+  // Nomes que não começam com A-Z caem no grupo "#".
+  _letraDe(nome) {
+    const semAcento = nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const letra = semAcento.charAt(0).toUpperCase();
+    return /[A-Z]/.test(letra) ? letra : '#';
+  },
+
   _renderizar() {
     const convidados = CheckIn.convidados;
     const filtrados = CheckIn.termoBusca
@@ -126,14 +141,38 @@ const CheckIn = {
 
     if (filtrados.length === 0) {
       container.innerHTML = `<p class="texto-vazio">${convidados.length === 0 ? 'Nenhum convidado cadastrado.' : 'Nenhum convidado encontrado com esse nome.'}</p>`;
+      CheckIn._renderizarAzNav([]);
       return;
     }
 
-    container.innerHTML = '';
-    filtrados
+    const ordenados = filtrados
       .slice()
-      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-      .forEach(convidado => {
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+    // Agrupa por letra inicial, na ordem em que aparecem (já vem ordenado)
+    const grupos = [];
+    ordenados.forEach(convidado => {
+      const letra = CheckIn._letraDe(convidado.nome);
+      let grupo = grupos[grupos.length - 1];
+      if (!grupo || grupo.letra !== letra) {
+        grupo = { letra, itens: [] };
+        grupos.push(grupo);
+      }
+      grupo.itens.push(convidado);
+    });
+
+    container.innerHTML = '';
+    grupos.forEach(grupo => {
+      const secao = document.createElement('div');
+      secao.className = 'grupo-letra';
+      secao.id = `letra-${grupo.letra}`;
+
+      const titulo = document.createElement('div');
+      titulo.className = 'grupo-letra__titulo';
+      titulo.textContent = grupo.letra;
+      secao.appendChild(titulo);
+
+      grupo.itens.forEach(convidado => {
         const presente = convidado.status === 'Presente';
         const pendente = CheckIn.pendentes.has(convidado.id_convidado);
 
@@ -151,8 +190,68 @@ const CheckIn = {
         linha.querySelector('.botao-checkin').addEventListener('click', () => {
           CheckIn.alternarPresenca(convidado.id_convidado);
         });
-        container.appendChild(linha);
+        secao.appendChild(linha);
       });
+
+      container.appendChild(secao);
+    });
+
+    CheckIn._renderizarAzNav(grupos.map(g => g.letra));
+  },
+
+  // Monta a barra A-Z: letras com convidados ficam clicáveis, o resto
+  // desabilitado. Reconstrói do zero a cada render porque o conjunto de
+  // letras disponíveis muda conforme a busca filtra a lista.
+  _renderizarAzNav(letrasDisponiveis) {
+    const nav = document.getElementById('az-nav');
+    if (!nav) return;
+
+    const disponiveisSet = new Set(letrasDisponiveis);
+    nav.innerHTML = '';
+
+    ALFABETO.forEach(letra => {
+      const disponivel = disponiveisSet.has(letra);
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.textContent = letra;
+      botao.disabled = !disponivel;
+      if (disponivel) {
+        botao.addEventListener('click', () => CheckIn._irParaLetra(letra));
+      }
+      nav.appendChild(botao);
+    });
+
+    CheckIn._observarGrupos();
+  },
+
+  _irParaLetra(letra) {
+    const alvo = document.getElementById(`letra-${letra}`);
+    if (!alvo) return;
+    const header = document.querySelector('.topo-app');
+    const offset = (header ? header.offsetHeight : 0) + 12;
+    const y = alvo.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  },
+
+  // Destaca na barra A-Z qual letra está visível no momento, conforme
+  // a pessoa rola a lista manualmente (sem precisar clicar na letra).
+  _observarGrupos() {
+    if (CheckIn._observer) CheckIn._observer.disconnect();
+
+    const grupos = document.querySelectorAll('.grupo-letra');
+    if (grupos.length === 0) return;
+
+    CheckIn._observer = new IntersectionObserver((entradas) => {
+      entradas.forEach(entrada => {
+        if (!entrada.isIntersecting) return;
+        const letra = entrada.target.id.replace('letra-', '');
+        document.querySelectorAll('#az-nav button').forEach(botao => {
+          botao.classList.toggle('ativa', botao.textContent === letra);
+        });
+      });
+    }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+
+    grupos.forEach(grupo => CheckIn._observer.observe(grupo));
   },
 
   async alternarPresenca(idConvidado) {

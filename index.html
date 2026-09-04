@@ -6,6 +6,7 @@
 <title>Jaqueline Vacari — Eventos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
 <style>
   :root{
     --sage-deep:   #7C8B72;
@@ -105,40 +106,50 @@
     gap:16px;
   }
 
-  .event-card{
+  .texto-vazio{
+    color:var(--ink-soft);
+    font-size:0.92rem;
+    padding:20px 4px;
+  }
+
+  .card-evento{
     background:var(--white);
     border:1px solid var(--border);
     border-radius:20px;
     padding:22px 26px;
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:16px;
+    display:block;
     text-decoration:none;
     color:inherit;
     transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
-  .event-card:hover{
+  .card-evento:hover{
     transform:translateY(-3px);
     box-shadow:var(--shadow-hover);
     border-color:var(--sage-light);
   }
 
-  .event-info h2{
-    font-family:'Cormorant Garamond', serif;
-    font-weight:600;
-    font-size:1.4rem;
+  .card-evento__topo{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
     margin-bottom:4px;
   }
 
-  .event-meta{
+  .card-evento__topo h3{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.4rem;
+  }
+
+  .card-evento > p{
     font-size:0.86rem;
     color:var(--ink-soft);
     margin-bottom:12px;
   }
 
-  .event-stats{
+  .resumo-convidados{
     display:flex;
     align-items:center;
     gap:18px;
@@ -146,15 +157,7 @@
     color:var(--ink-soft);
   }
 
-  .event-stats .stat{
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-
-  .event-stats svg{ width:15px; height:15px; stroke:var(--ink-soft); flex-shrink:0; }
-
-  .event-stats .presentes{
+  .resumo-convidados__item--presente{
     color:var(--green);
     font-weight:500;
   }
@@ -166,16 +169,134 @@
     font-weight:500;
     letter-spacing:0.03em;
     white-space:nowrap;
+    flex-shrink:0;
   }
 
-  .badge.ativo{ background:var(--sage-light); color:var(--sage-deep); }
-  .badge.planejamento{ background:var(--gold-soft); color:#8C6D3E; }
-  .badge.finalizado{ background:#EEE; color:var(--ink-soft); }
+  .badge--ativo{ background:var(--sage-light); color:var(--sage-deep); }
+  .badge--finalizado{ background:#EEE; color:var(--ink-soft); }
+
+  /* Modal de novo evento */
+  .modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(59,60,50,0.4);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+
+  .modal.modal--visivel{ display:flex; }
+
+  .modal__conteudo{
+    background:var(--white);
+    border-radius:20px;
+    padding:32px;
+    max-width:480px;
+    width:100%;
+    max-height:86vh;
+    overflow-y:auto;
+    box-shadow:var(--shadow-hover);
+  }
+
+  .modal__topo{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:22px;
+  }
+
+  .modal__topo h2{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.3rem;
+    color:var(--sage-deep);
+  }
+
+  #btn-fechar-modal{
+    background:none;
+    border:none;
+    font-size:1.2rem;
+    color:var(--ink-soft);
+    cursor:pointer;
+    line-height:1;
+  }
+
+  label{
+    display:block;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    margin:16px 0 6px;
+  }
+
+  input[type="text"], input[type="date"]{
+    width:100%;
+    padding:10px 14px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-family:'Jost', sans-serif;
+    font-size:0.9rem;
+    color:var(--ink);
+  }
+
+  .linha-convidado-novo{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+
+  .linha-convidado-novo__mesa{ max-width:90px; }
+
+  .botao-remover{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-size:1rem;
+  }
+
+  .btn-secundario{
+    background:var(--sage-light);
+    color:var(--sage-deep);
+    border:none;
+    padding:8px 16px;
+    border-radius:100px;
+    font-family:'Jost', sans-serif;
+    font-size:0.82rem;
+    font-weight:500;
+    cursor:pointer;
+    margin-top:4px;
+  }
+
+  #nome-arquivo-selecionado{
+    display:block;
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+
+  .modal__rodape{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:26px;
+  }
+
+  .btn-primario{
+    background:var(--sage-deep);
+    color:var(--white);
+    border:none;
+    padding:12px 26px;
+    border-radius:100px;
+    font-family:'Jost', sans-serif;
+    font-size:0.9rem;
+    font-weight:500;
+    cursor:pointer;
+  }
 
   @media (max-width:560px){
     header{ padding:18px 20px; }
     main{ padding:32px 16px 48px; }
-    .event-card{ flex-direction:column; }
   }
 </style>
 </head>
@@ -187,40 +308,49 @@
   </header>
 
   <main>
-    <button class="btn-new">+ Novo evento</button>
+    <button class="btn-new" id="btn-abrir-modal">+ Novo evento</button>
 
-    <div class="events">
-      <a href="evento.html" class="event-card">
-        <div class="event-info">
-          <h2>Casamento Petefi</h2>
-          <div class="event-meta">26/08/2026 · Expo</div>
-          <div class="event-stats">
-            <span class="stat">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              204 convidados
-            </span>
-            <span class="stat presentes">✓ 4 presentes</span>
-          </div>
-        </div>
-        <span class="badge ativo">Ativo</span>
-      </a>
-
-      <a href="evento.html" class="event-card">
-        <div class="event-info">
-          <h2>Tailan</h2>
-          <div class="event-meta">27/08/2026 · Villa Rosa</div>
-          <div class="event-stats">
-            <span class="stat">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              205 convidados
-            </span>
-            <span class="stat presentes">✓ 1 presente</span>
-          </div>
-        </div>
-        <span class="badge planejamento">Planejamento</span>
-      </a>
+    <div class="events" id="lista-eventos">
+      <p class="texto-vazio">Carregando eventos...</p>
     </div>
   </main>
 
+  <!-- Modal: criar novo evento -->
+  <div class="modal" id="modal-novo-evento">
+    <div class="modal__conteudo">
+      <div class="modal__topo">
+        <h2>Novo evento</h2>
+        <button type="button" id="btn-fechar-modal" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="form-novo-evento">
+        <label for="nomeEvento">Nome do evento</label>
+        <input type="text" id="nomeEvento" name="nomeEvento" required>
+
+        <label for="dataEvento">Data</label>
+        <input type="date" id="dataEvento" name="dataEvento">
+
+        <label for="local">Local</label>
+        <input type="text" id="local" name="local">
+
+        <label>Convidados (opcional agora, dá pra adicionar depois)</label>
+        <div id="linhas-convidados"></div>
+        <button type="button" class="btn-secundario" id="btn-add-linha-convidado">+ Adicionar convidado</button>
+
+        <label for="input-importar-novo-evento">Ou importar lista (xlsx/csv)</label>
+        <input type="file" id="input-importar-novo-evento" accept=".xlsx,.xls,.csv">
+        <span id="nome-arquivo-selecionado"></span>
+
+        <div class="modal__rodape">
+          <button type="submit" class="btn-primario">Criar evento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/eventos.js"></script>
 </body>
 </html>

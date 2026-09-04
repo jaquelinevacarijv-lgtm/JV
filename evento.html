@@ -6,6 +6,7 @@
 <title>Jaqueline Vacari — Painel do Evento</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
 <style>
   :root{
     --sage-deep:   #7C8B72;
@@ -33,7 +34,6 @@
     display:flex;
   }
 
-  /* ---------- SIDEBAR ---------- */
   .sidebar{
     width:270px;
     min-height:100vh;
@@ -109,14 +109,15 @@
     transform:translateX(3px);
   }
 
-  nav.menu a.active{
-    background:var(--cream);
-    color:var(--sage-deep);
-    font-weight:500;
-    box-shadow:var(--shadow);
+  nav.menu a.em-breve{
+    opacity:0.55;
+    cursor:default;
   }
 
-  nav.menu a.active .dot{ background:var(--gold); }
+  nav.menu a.em-breve:hover{
+    background:none;
+    transform:none;
+  }
 
   .sidebar-footer{
     margin-top:auto;
@@ -127,7 +128,6 @@
     border-top:1px solid rgba(255,255,255,0.18);
   }
 
-  /* ---------- MAIN ---------- */
   main{
     flex:1;
     padding:44px 56px 60px;
@@ -204,7 +204,6 @@
     vertical-align:middle;
   }
 
-  /* ---------- MODULE GRID ---------- */
   .grid{
     display:grid;
     grid-template-columns:repeat(2, minmax(240px, 1fr));
@@ -230,6 +229,12 @@
   .card:hover{
     transform:translateY(-4px);
     box-shadow:var(--shadow-hover);
+  }
+
+  .card.em-breve{
+    opacity:0.55;
+    cursor:default;
+    pointer-events:none;
   }
 
   .card .icon{
@@ -277,14 +282,14 @@
     <div class="brand">Jaqueline Vacari<span>EVENTOS &amp; CASAMENTOS</span></div>
     <div class="menu-label">Menu</div>
     <nav class="menu">
-      <a href="#" class="active"><span class="dot"></span> Convidados</a>
-      <a href="#"><span class="dot"></span> Checklist</a>
-      <a href="#"><span class="dot"></span> Menu Degustação</a>
-      <a href="#"><span class="dot"></span> Projeto Decoração</a>
-      <a href="#"><span class="dot"></span> Controle Financeiro</a>
-      <a href="#"><span class="dot"></span> Contratos e Comprovantes</a>
-      <a href="#"><span class="dot"></span> Reuniões</a>
-      <a href="#"><span class="dot"></span> Moodboard</a>
+      <a href="#" id="menu-convidados"><span class="dot"></span> Convidados</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Checklist</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Menu Degustação</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Projeto Decoração</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Controle Financeiro</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Contratos e Comprovantes</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Reuniões</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Moodboard</a>
     </nav>
     <div class="sidebar-footer">Painel do evento</div>
   </aside>
@@ -293,33 +298,37 @@
     <div class="top-seal">Jaqueline<br>Vacari</div>
 
     <div class="hero">
-      <div class="hero-photo">Foto ou logo<br>do casamento</div>
-      <div class="event-name">Casamento Fulana &amp; Fulano</div>
-      <div class="event-meta">12 Dez 2026<span class="divider"></span>Vinícola Bella Vista</div>
+      <div class="hero-photo">Foto ou logo<br>do evento</div>
+      <div class="event-name" id="event-name">Carregando...</div>
+      <div class="event-meta" id="event-meta"></div>
     </div>
 
     <div class="grid">
-      <a href="#" class="card">
+      <a href="#" class="card" id="card-convidados">
         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div class="text"><strong>Convidados</strong><small>Lista, mesas e check-in</small></div>
       </a>
 
-      <a href="#" class="card accent">
+      <a href="#" class="card accent em-breve">
         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <div class="text"><strong>Checklist</strong><small>Tarefas do evento</small></div>
+        <div class="text"><strong>Checklist</strong><small>Em breve</small></div>
       </a>
 
-      <a href="#" class="card">
+      <a href="#" class="card em-breve">
         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V2"/><path d="M6 2v20"/><path d="M18 2c-2 2-3 4-3 8a3 3 0 0 0 3 3v9"/></svg></div>
-        <div class="text"><strong>Menu Degustação</strong><small>Cardápio e preferências</small></div>
+        <div class="text"><strong>Menu Degustação</strong><small>Em breve</small></div>
       </a>
 
-      <a href="#" class="card accent">
+      <a href="#" class="card accent em-breve">
         <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C7 6 4 10 4 14a8 8 0 0 0 16 0c0-4-3-8-8-12z"/></svg></div>
-        <div class="text"><strong>Projeto Decoração</strong><small>Referências e moodboard</small></div>
+        <div class="text"><strong>Projeto Decoração</strong><small>Em breve</small></div>
       </a>
     </div>
   </main>
 
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/painel.js"></script>
 </body>
 </html>

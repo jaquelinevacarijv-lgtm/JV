@@ -1,170 +1,337 @@
-/**
- * eventos.js
- * -----------------------------------------------------------------------
- * Lógica exclusiva da tela inicial (index.html): listar eventos (com
- * resumo de convidados) e criar um evento novo, já com a lista de
- * convidados (digitada à mão ou importada de planilha). Não sabe nada
- * sobre a tela de detalhe/check-in — isso é lá em convidados.js
- * -----------------------------------------------------------------------
- */
-
-const Eventos = {
-  // Linhas de convidados adicionadas manualmente no modal de criação,
-  // antes de o evento existir no servidor.
-  linhasConvidadosNovoEvento: [],
-  arquivoImportadoNovoEvento: null,
-
-  async carregarLista() {
-    const { eventos } = await UI.executar(() => Api.get('listarEventos'));
-    Eventos._renderizarLista(eventos);
-  },
-
-  _renderizarLista(eventos) {
-    const container = document.getElementById('lista-eventos');
-    container.innerHTML = '';
-
-    if (eventos.length === 0) {
-      container.innerHTML = '<p class="texto-vazio">Nenhum evento cadastrado ainda. Toque em "+ Novo evento" pra começar.</p>';
-      return;
-    }
-
-    eventos
-      .sort((a, b) => new Date(b.data_criacao) - new Date(a.data_criacao))
-      .forEach(evento => {
-        const total = evento.totalConvidados ?? 0;
-        const presentes = evento.totalPresentes ?? 0;
-
-        const card = document.createElement('a');
-        card.href = `evento.html?id=${evento.id_evento}`;
-        card.className = 'card-evento';
-        card.innerHTML = `
-          <div class="card-evento__topo">
-            <h3>${evento.nome_evento}</h3>
-            <span class="badge badge--${evento.status === 'Finalizado' ? 'finalizado' : 'ativo'}">
-              ${evento.status || 'Ativo'}
-            </span>
-          </div>
-          <p>${UI.formatarData(evento.data_evento)}${evento.local ? ' · ' + evento.local : ''}</p>
-          <div class="resumo-convidados">
-            <span class="resumo-convidados__item">👥 ${total} convidado${total === 1 ? '' : 's'}</span>
-            <span class="resumo-convidados__item resumo-convidados__item--presente">✓ ${presentes} presente${presentes === 1 ? '' : 's'}</span>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-  },
-
-  async criar(nomeEvento, dataEvento, local) {
-    const { evento } = await UI.executar(() => Api.post('criarEvento', { nomeEvento, dataEvento, local }));
-
-    // Depois que o evento existe, envia a lista de convidados — manual
-    // e/ou importada, o que tiver sido preenchido no modal.
-    if (Eventos.linhasConvidadosNovoEvento.length > 0) {
-      await UI.executar(() => Api.post('adicionarConvidadosManual', {
-        idEvento: evento.id_evento,
-        convidados: Eventos.linhasConvidadosNovoEvento
-      }));
-    }
-
-    if (Eventos.arquivoImportadoNovoEvento) {
-      const conteudoBase64 = await Eventos._arquivoParaBase64(Eventos.arquivoImportadoNovoEvento);
-      await UI.executar(() => Api.post('importarConvidados', {
-        idEvento: evento.id_evento,
-        nomeArquivo: Eventos.arquivoImportadoNovoEvento.name,
-        mimeType: Eventos.arquivoImportadoNovoEvento.type,
-        conteudoBase64
-      }));
-    }
-
-    window.location.href = `evento.html?id=${evento.id_evento}`;
-  },
-
-  _arquivoParaBase64(arquivo) {
-    return new Promise((resolve, reject) => {
-      const leitor = new FileReader();
-      leitor.onload = () => resolve(leitor.result.split(',')[1]);
-      leitor.onerror = reject;
-      leitor.readAsDataURL(arquivo);
-    });
-  },
-
-  // --- Linhas de convidados dentro do modal de criação ---------------
-
-  adicionarLinhaConvidado(nome = '', mesa = '') {
-    const id = `novo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    Eventos.linhasConvidadosNovoEvento.push({ id, nome, mesa });
-    Eventos._renderizarLinhasConvidados();
-  },
-
-  removerLinhaConvidado(id) {
-    Eventos.linhasConvidadosNovoEvento = Eventos.linhasConvidadosNovoEvento.filter(l => l.id !== id);
-    Eventos._renderizarLinhasConvidados();
-  },
-
-  _renderizarLinhasConvidados() {
-    const container = document.getElementById('linhas-convidados');
-    container.innerHTML = '';
-
-    Eventos.linhasConvidadosNovoEvento.forEach(linha => {
-      const div = document.createElement('div');
-      div.className = 'linha-convidado-novo';
-      div.innerHTML = `
-        <input type="text" placeholder="Nome do convidado" value="${linha.nome}" data-campo="nome" data-id="${linha.id}">
-        <input type="text" placeholder="Mesa" value="${linha.mesa}" data-campo="mesa" data-id="${linha.id}" class="linha-convidado-novo__mesa">
-        <button type="button" class="botao-remover" data-id="${linha.id}" aria-label="Remover convidado">✕</button>
-      `;
-      container.appendChild(div);
-    });
-
-    container.querySelectorAll('input').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const linha = Eventos.linhasConvidadosNovoEvento.find(l => l.id === e.target.dataset.id);
-        if (linha) linha[e.target.dataset.campo] = e.target.value;
-      });
-    });
-
-    container.querySelectorAll('.botao-remover').forEach(botao => {
-      botao.addEventListener('click', (e) => {
-        Eventos.removerLinhaConvidado(e.target.dataset.id);
-      });
-    });
-  },
-
-  resetarModal() {
-    Eventos.linhasConvidadosNovoEvento = [];
-    Eventos.arquivoImportadoNovoEvento = null;
-    document.getElementById('linhas-convidados').innerHTML = '';
-    document.getElementById('input-importar-novo-evento').value = '';
-    document.getElementById('nome-arquivo-selecionado').textContent = '';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaqueline Vacari — Painel do Evento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --sage-deep:   #7C8B72;
+    --sage:        #A9B79E;
+    --sage-light:  #C6D0BC;
+    --cream:       #FBF9F4;
+    --white:       #FFFFFF;
+    --ink:         #3B3C32;
+    --ink-soft:    #7B7C6E;
+    --gold:        #BFA06A;
+    --gold-soft:   #E8DCC4;
+    --shadow:      0 10px 30px rgba(60,64,45,0.08);
+    --shadow-hover:0 16px 34px rgba(60,64,45,0.14);
+    --radius-lg:   28px;
+    --radius-md:   18px;
   }
-};
 
-document.addEventListener('DOMContentLoaded', () => {
-  Eventos.carregarLista();
+  *{ box-sizing:border-box; margin:0; padding:0; }
 
-  const form = document.getElementById('form-novo-evento');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const dados = new FormData(form);
-    Eventos.criar(dados.get('nomeEvento'), dados.get('dataEvento'), dados.get('local'));
-  });
+  body{
+    font-family:'Jost', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+  }
 
-  document.getElementById('btn-abrir-modal').addEventListener('click', () => {
-    Eventos.resetarModal();
-    document.getElementById('modal-novo-evento').classList.add('modal--visivel');
-  });
-  document.getElementById('btn-fechar-modal').addEventListener('click', () => {
-    document.getElementById('modal-novo-evento').classList.remove('modal--visivel');
-    form.reset();
-  });
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:270px;
+    min-height:100vh;
+    background:linear-gradient(180deg, var(--sage-deep) 0%, var(--sage) 100%);
+    padding:28px 22px;
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:0;
+  }
 
-  document.getElementById('btn-add-linha-convidado').addEventListener('click', () => {
-    Eventos.adicionarLinhaConvidado();
-  });
+  .brand{
+    background:var(--cream);
+    border-radius:100px;
+    padding:16px 12px;
+    text-align:center;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.15rem;
+    letter-spacing:0.06em;
+    color:var(--sage-deep);
+    box-shadow:var(--shadow);
+    margin-bottom:38px;
+  }
 
-  document.getElementById('input-importar-novo-evento').addEventListener('change', (e) => {
-    Eventos.arquivoImportadoNovoEvento = e.target.files[0] || null;
-    document.getElementById('nome-arquivo-selecionado').textContent =
-      Eventos.arquivoImportadoNovoEvento ? `📎 ${Eventos.arquivoImportadoNovoEvento.name}` : '';
-  });
-});
+  .brand span{
+    display:block;
+    font-family:'Jost', sans-serif;
+    font-weight:300;
+    font-size:0.6rem;
+    letter-spacing:0.32em;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+
+  .menu-label{
+    font-size:0.68rem;
+    letter-spacing:0.28em;
+    color:rgba(255,255,255,0.75);
+    margin:0 10px 14px;
+    text-transform:uppercase;
+  }
+
+  nav.menu{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+
+  nav.menu a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    border-radius:14px;
+    color:rgba(255,255,255,0.92);
+    text-decoration:none;
+    font-size:0.94rem;
+    font-weight:400;
+    letter-spacing:0.01em;
+    transition:background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  }
+
+  nav.menu a .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:rgba(255,255,255,0.55);
+    flex-shrink:0;
+    transition:background 0.2s ease;
+  }
+
+  nav.menu a:hover{
+    background:rgba(255,255,255,0.14);
+    transform:translateX(3px);
+  }
+
+  nav.menu a.em-breve{
+    opacity:0.55;
+    cursor:default;
+  }
+
+  nav.menu a.em-breve:hover{
+    background:none;
+    transform:none;
+  }
+
+  .sidebar-footer{
+    margin-top:auto;
+    padding-top:24px;
+    font-size:0.72rem;
+    color:rgba(255,255,255,0.65);
+    letter-spacing:0.05em;
+    border-top:1px solid rgba(255,255,255,0.18);
+  }
+
+  /* ---------- MAIN ---------- */
+  main{
+    flex:1;
+    padding:44px 56px 60px;
+    position:relative;
+  }
+
+  .top-seal{
+    position:absolute;
+    top:44px;
+    right:56px;
+    width:96px; height:96px;
+    border-radius:50%;
+    background:var(--sage-light);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-family:'Cormorant Garamond', serif;
+    font-size:0.78rem;
+    letter-spacing:0.08em;
+    color:var(--sage-deep);
+    box-shadow:var(--shadow);
+    border:1px solid var(--white);
+  }
+
+  .hero{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding-top:6px;
+    margin-bottom:52px;
+  }
+
+  .hero-photo{
+    width:190px; height:190px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.55), transparent 45%),
+      linear-gradient(160deg, var(--sage-light), var(--sage));
+    display:flex; align-items:center; justify-content:center;
+    color:var(--white);
+    font-family:'Cormorant Garamond', serif;
+    font-size:0.95rem;
+    letter-spacing:0.05em;
+    box-shadow:var(--shadow);
+    border:6px solid var(--white);
+    margin-bottom:22px;
+  }
+
+  .event-name{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:2.1rem;
+    color:var(--ink);
+    letter-spacing:0.02em;
+  }
+
+  .event-meta{
+    margin-top:8px;
+    font-size:0.82rem;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  .event-meta .divider{
+    display:inline-block;
+    width:5px; height:5px;
+    background:var(--gold);
+    border-radius:50%;
+    margin:0 10px;
+    vertical-align:middle;
+  }
+
+  /* ---------- MODULE GRID ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(240px, 1fr));
+    gap:22px;
+    max-width:760px;
+    margin:0 auto;
+  }
+
+  .card{
+    background:var(--white);
+    border-radius:var(--radius-lg);
+    padding:26px 24px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    text-decoration:none;
+    color:var(--ink);
+    box-shadow:var(--shadow);
+    transition:transform 0.22s ease, box-shadow 0.22s ease;
+    border:1px solid rgba(169,183,158,0.25);
+  }
+
+  .card:hover{
+    transform:translateY(-4px);
+    box-shadow:var(--shadow-hover);
+  }
+
+  .card.em-breve{
+    opacity:0.55;
+    cursor:default;
+    pointer-events:none;
+  }
+
+  .card .icon{
+    width:52px; height:52px;
+    border-radius:50%;
+    background:var(--sage-light);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+
+  .card .icon svg{ width:24px; height:24px; stroke:var(--sage-deep); }
+
+  .card .text strong{
+    display:block;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:1.18rem;
+    letter-spacing:0.01em;
+  }
+
+  .card .text small{
+    display:block;
+    margin-top:3px;
+    font-size:0.76rem;
+    color:var(--ink-soft);
+    letter-spacing:0.03em;
+  }
+
+  .card.accent .icon{ background:var(--gold-soft); }
+  .card.accent .icon svg{ stroke:var(--gold); }
+
+  @media (max-width: 860px){
+    body{ flex-direction:column; }
+    .sidebar{ width:100%; min-height:auto; position:relative; }
+    nav.menu{ flex-direction:row; flex-wrap:wrap; }
+    .top-seal{ display:none; }
+    main{ padding:36px 24px 48px; }
+    .grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">Jaqueline Vacari<span>EVENTOS &amp; CASAMENTOS</span></div>
+    <div class="menu-label">Menu</div>
+    <nav class="menu">
+      <a href="#" id="menu-convidados"><span class="dot"></span> Convidados</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Checklist</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Menu Degustação</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Projeto Decoração</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Controle Financeiro</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Contratos e Comprovantes</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Reuniões</a>
+      <a href="#" class="em-breve"><span class="dot"></span> Moodboard</a>
+    </nav>
+    <div class="sidebar-footer">Painel do evento</div>
+  </aside>
+
+  <main>
+    <div class="top-seal">Jaqueline<br>Vacari</div>
+
+    <div class="hero">
+      <div class="hero-photo">Foto ou logo<br>do evento</div>
+      <div class="event-name" id="event-name">Carregando...</div>
+      <div class="event-meta" id="event-meta"></div>
+    </div>
+
+    <div class="grid">
+      <a href="#" class="card" id="card-convidados">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="text"><strong>Convidados</strong><small>Lista, mesas e check-in</small></div>
+      </a>
+
+      <a href="#" class="card accent em-breve">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div class="text"><strong>Checklist</strong><small>Em breve</small></div>
+      </a>
+
+      <a href="#" class="card em-breve">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V2"/><path d="M6 2v20"/><path d="M18 2c-2 2-3 4-3 8a3 3 0 0 0 3 3v9"/></svg></div>
+        <div class="text"><strong>Menu Degustação</strong><small>Em breve</small></div>
+      </a>
+
+      <a href="#" class="card accent em-breve">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C7 6 4 10 4 14a8 8 0 0 0 16 0c0-4-3-8-8-12z"/></svg></div>
+        <div class="text"><strong>Projeto Decoração</strong><small>Em breve</small></div>
+      </a>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/painel.js"></script>
+</body>
+</html>
